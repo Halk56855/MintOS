@@ -2,6 +2,11 @@ name: Build ProjectNERV for A04
 
 on:
   workflow_dispatch:
+    inputs:
+      target_firmware:
+        description: "Galaxy A04 firmware string (MODEL/CSC/IMEI_OR_SERIAL)"
+        required: false
+        default: "SM-A045F/INS/352353115333368"
   pull_request:
   push:
     branches:
@@ -96,15 +101,52 @@ jobs:
       - name: Prepare or verify target/a04
         run: |
           set -e
-          if [ ! -d "target/a04" ]; then
-            echo "target/a04 not found. Creating basic scaffold from first available target..."
-            FIRST_TARGET=$(ls -1 target | head -n 1)
-            mkdir -p target/a04
-            if [ -n "$FIRST_TARGET" ]; then
-              cp -r "target/$FIRST_TARGET/." "target/a04/"
-            fi
+          mkdir -p target/a04
+          if [ -d "target/a51" ]; then
+            cp -rn target/a51/. target/a04/ || true
           fi
-          ls -la target/a04
+
+          FW_VAL="${{ github.event.inputs.target_firmware }}"
+          if [ -z "$FW_VAL" ]; then
+            FW_VAL="SM-A045F/INS/352353115333368"
+          fi
+
+          cat > target/a04/config.sh <<EOF
+# Device configuration file for Galaxy A04 (a04)
+TARGET_NAME="Galaxy A04"
+TARGET_CODENAME="a04"
+TARGET_FIRMWARE="$FW_VAL"
+TARGET_PRODUCT_FIRST_API_LEVEL=32
+TARGET_EXTRA_FIRMWARES=()
+TARGET_API_LEVEL=33
+TARGET_VENDOR_API_LEVEL=33
+TARGET_SINGLE_SYSTEM_IMAGE="essi"
+TARGET_OS_FILE_SYSTEM="erofs"
+TARGET_SUPER_PARTITION_SIZE=6836715520
+TARGET_SUPER_GROUP_SIZE=6832521216
+TARGET_HAS_SYSTEM_EXT=false
+
+# SEC Product Feature
+TARGET_FP_SENSOR_CONFIG="none"
+TARGET_SSRM_CONFIG_NAME="siop_a04_mt6765"
+TARGET_MDNIE_SUPPORTED_MODES="45073"
+TARGET_AUDIO_SUPPORT_ACH_RINGTONE=false
+TARGET_AUDIO_SUPPORT_DUAL_SPEAKER=false
+TARGET_AUDIO_SUPPORT_VIRTUAL_VIBRATION=false
+TARGET_AUTO_BRIGHTNESS_TYPE="3"
+TARGET_DVFS_CONFIG_NAME="dvfs_policy_mt6765_xx"
+TARGET_HAS_HW_MDNIE=false
+TARGET_HAS_MASS_CAMERA_APP=true
+TARGET_HAS_QHD_DISPLAY=false
+TARGET_HFR_MODE="1"
+TARGET_HFR_SUPPORTED_REFRESH_RATE="60"
+TARGET_HFR_DEFAULT_REFRESH_RATE="60"
+TARGET_IS_ESIM_SUPPORTED=false
+TARGET_MDNIE_WEAKNESS_SOLUTION_FUNCTION="0"
+TARGET_MULTI_MIC_MANAGER_VERSION="07010"
+TARGET_SUPPORT_CUTOUT_PROTECTION=false
+EOF
+          cat target/a04/config.sh
 
       - name: Set up JDK 11
         uses: actions/setup-java@v4
