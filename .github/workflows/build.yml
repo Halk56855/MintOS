@@ -45,13 +45,18 @@ jobs:
 
       - name: Set up build environment
         run: |
+          set -e
           sudo apt update
           DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
             p7zip-full jq attr ccache clang ffmpeg golang cargo rustc \
             libbrotli-dev libgtest-dev libprotobuf-dev libunwind-dev libpcre2-dev \
-            libzstd-dev linux-modules-extra-$(uname -r) lld jq protobuf-compiler pcre2-utils webp \
+            libzstd-dev lld protobuf-compiler pcre2-utils webp \
             curl xxd patchelf flex bison libarchive-tools build-essential python3.12-venv device-tree-compiler
-          sudo modprobe erofs f2fs
+          DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
+            "linux-modules-extra-$(uname -r)" || \
+          DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
+            linux-modules-extra-aws || true
+          sudo modprobe erofs f2fs || true
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           echo -n "${{ secrets.PLATFORM_KEY_PK8 }}" | base64 --decode > security/platform.pk8
