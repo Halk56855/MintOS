@@ -255,21 +255,20 @@ fi
 if $MAGISKBOOT; then
     case "$(uname -m)" in
         arm64|aarch64)
-            ARCH="arm64-v8a"
+            MB_ARCH="arm64-v8a"
             ;;
         amd64|x86_64)
-            ARCH="x86_64"
+            MB_ARCH="x86_64"
+            ;;
+        *)
+            MB_ARCH="x86_64"
             ;;
     esac
     MAGISKBOOT_TMP="$(mktemp -d)"
     MAGISKBOOT_CMDS=(
-    "MAGISK_URL=\"\$(curl -sL \${GITHUB_TOKEN:+-H \"Authorization: Bearer \$GITHUB_TOKEN\"} https://api.github.com/repos/topjohnwu/Magisk/releases/latest | jq -r '.assets[]? | select(.name | test(\"^Magisk-v[0-9.]+\\\\.apk$\")) | .browser_download_url' | head -n 1)\""
-    "[ -z \"\$MAGISK_URL\" ] && MAGISK_URL=\"https://github.com/topjohnwu/Magisk/releases/download/v28.1/Magisk-v28.1.apk\""
-    "curl -L -s -o magisk.apk \"\$MAGISK_URL\""
-    "[ -s magisk.apk ]"
-    "unzip -q -j magisk.apk lib/$ARCH/libmagiskboot.so"
-    "mv libmagiskboot.so \"$TOOLS_DIR/bin/magiskboot\""
-    "chmod +x \"$TOOLS_DIR/bin/magiskboot\""
+        "git clone --depth=1 https://github.com/Uevo001/magiskboot-linux.git repo"
+        "cp -a \"repo/$MB_ARCH/magiskboot\" \"$TOOLS_DIR/bin/magiskboot\""
+        "chmod +x \"$TOOLS_DIR/bin/magiskboot\""
     )
 
     BUILD "magiskboot" "$MAGISKBOOT_TMP" "${MAGISKBOOT_CMDS[@]}"
