@@ -48,7 +48,7 @@ jobs:
           set -e
           sudo apt update
           DEBIAN_FRONTEND=noninteractive sudo apt install -yq \
-            p7zip-full jq attr ccache clang ffmpeg golang cargo rustc \
+            p7zip-full jq attr ccache clang ffmpeg golang \
             libbrotli-dev libgtest-dev libprotobuf-dev libunwind-dev libpcre2-dev \
             libzstd-dev lld protobuf-compiler pcre2-utils webp \
             curl xxd patchelf flex bison libarchive-tools build-essential python3.12-venv device-tree-compiler
@@ -66,6 +66,14 @@ jobs:
         run: |
           set -e
           export PATH="$HOME/.cargo/bin:$PATH"
+          if ! command -v rustup >/dev/null 2>&1; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+          else
+            rustup toolchain install stable --profile minimal
+            rustup default stable
+          fi
+          rustc --version
+          cargo --version
           if ! command -v samloader >/dev/null 2>&1 && ! command -v samloader-rs >/dev/null 2>&1; then
             cargo install --git https://github.com/topjohnwu/samloader-rs.git samloader --locked || \
             cargo install --git https://github.com/topjohnwu/samloader-rs.git samloader
