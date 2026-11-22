@@ -20,10 +20,12 @@ jobs:
       - name: Initialize submodules (skip broken target/a53x/patches/vendor)
         run: |
           set -e
+          git submodule deinit -f -- target/a53x/patches/vendor 2>/dev/null || true
+          rm -rf .git/modules/target/a53x/patches/vendor target/a53x/patches/vendor
+          git config --remove-section submodule.target/a53x/patches/vendor 2>/dev/null || true
+          git config -f .gitmodules --remove-section submodule.target/a53x/patches/vendor 2>/dev/null || true
           git submodule sync --recursive
-          git config -f .gitmodules --remove-section submodule.target/a53x/patches/vendor || true
-          git rm --cached target/a53x/patches/vendor 2>/dev/null || true
-          git -c protocol.version=2 submodule update --init --force --depth=1 --recursive
+          git -c protocol.version=2 submodule update --init --force --depth=1 --recursive external/android-tools external/apktool external/erofs-utils external/img2sdat external/samloader external/signapk external/smali
           git submodule status
 
       - name: Free disk space (1/3)
