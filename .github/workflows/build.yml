@@ -110,14 +110,14 @@ jobs:
             FW_VAL="SM-A045F/INS/352353115333368"
           fi
           printf '%s\n' \
-            '# Device configuration file for Galaxy A04 (a04)' \
+            '# Device configuration file for Galaxy A04 (a04) - One UI 6.1 / Android 14' \
             'TARGET_NAME="Galaxy A04"' \
             'TARGET_CODENAME="a04"' \
             "TARGET_FIRMWARE=\"$FW_VAL\"" \
             'TARGET_PRODUCT_FIRST_API_LEVEL=32' \
             'TARGET_EXTRA_FIRMWARES=()' \
-            'TARGET_API_LEVEL=33' \
-            'TARGET_VENDOR_API_LEVEL=33' \
+            'TARGET_API_LEVEL=34' \
+            'TARGET_VENDOR_API_LEVEL=34' \
             'TARGET_SINGLE_SYSTEM_IMAGE="essi"' \
             'TARGET_OS_FILE_SYSTEM="erofs"' \
             'TARGET_SUPER_PARTITION_SIZE=6836715520' \
