@@ -138,47 +138,15 @@ VERIFY_ODIN_PACKAGES()
 RUN_SAMLOADER_DOWNLOAD()
 {
     local OUT_PATH="$1"
-    local ATTEMPT_NUM="${2:-1}"
-    local HELP_TEXT=""
-    local DL_ARGS=()
-
-    HELP_TEXT="$(samloader download --help 2>&1 || true)"
-
-    if grep -q -- "--model" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(--model "$MODEL")
-    elif grep -q -- "-m" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(-m "$MODEL")
-    fi
-
-    if grep -q -- "--region" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(--region "$CSC")
-    elif grep -q -- "--csc" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(--csc "$CSC")
-    elif grep -q -- "-r" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(-r "$CSC")
-    fi
-
-    if [ -n "$IMEI" ] && grep -q -- "--imei" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(--imei "$IMEI")
-    elif [ -n "$SERIAL_NO" ] && grep -q -- "--serial" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(--serial "$SERIAL_NO")
-    fi
-
-    if grep -q -- "--output" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(--output "$OUT_PATH")
-    elif grep -q -- "-o" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(-o "$OUT_PATH")
-    elif grep -q -- "-O" <<< "$HELP_TEXT"; then
-        DL_ARGS+=(-O "$OUT_PATH")
-    fi
-
-    if [ "$ATTEMPT_NUM" -eq 1 ]; then
-        echo "$HELP_TEXT" >&2
-    fi
+    local OUT_FILE="$OUT_PATH/${MODEL}_${CSC}.zip"
 
     (
         cd "$OUT_DIR" || exit 1
-        samloader download "${DL_ARGS[@]}"
+        samloader download \
+            --model "$MODEL" \
+            --region "$CSC" \
+            --no-extract \
+            --out-file "$OUT_FILE"
     )
 }
 # ]
@@ -230,7 +198,7 @@ for i in "${FIRMWARES[@]}"; do
     COUNT=1
     # Loop until download succeeds or retries are exhausted
     while true; do
-        if RUN_SAMLOADER_DOWNLOAD "$ODIN_DIR/${MODEL}_${CSC}" "$COUNT"; then
+        if RUN_SAMLOADER_DOWNLOAD "$ODIN_DIR/${MODEL}_${CSC}"; then
             ZIP_FILE="$(find "$ODIN_DIR/${MODEL}_${CSC}" -name "*.zip" | sort -r | head -n 1)"
             if [ -n "$ZIP_FILE" ] && [ -f "$ZIP_FILE" ]; then
                 break
