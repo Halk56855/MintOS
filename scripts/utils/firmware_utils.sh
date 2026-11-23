@@ -116,8 +116,20 @@ GET_LATEST_FIRMWARE()
     _CHECK_NON_EMPTY_PARAM "MODEL" "$1" || return 1
     _CHECK_NON_EMPTY_PARAM "CSC" "$2" || return 1
 
-    curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$2/$1/version.xml" \
-        | perl -nE 'say $1 if /<latest[^>]*>(.*?)<\/latest>/'
+    local MODEL="$1"
+    local CSC="$2"
+    local LATEST=""
+
+    LATEST="$(curl -s --retry 5 --retry-delay 5 "https://fota-cloud-dn.ospserver.net/firmware/$CSC/$MODEL/version.xml" \
+        | perl -nE 'say $1 if /<latest[^>]*>(.*?)<\/latest>/' | head -n 1)"
+
+    if [ -z "$LATEST" ] && command -v samloader >/dev/null 2>&1; then
+        local SAM_OUT=""
+        SAM_OUT="$(samloader check-update -m "$MODEL" -r "$CSC" 2>/dev/null || true)"
+        LATEST="$(printf '%s\n' "$SAM_OUT" | grep -Eo '[A-Z0-9]{5,}(/[A-Z0-9]{5,}){1,3}' | head -n 1)"
+    fi
+
+    [ -n "$LATEST" ] && printf '%s\n' "$LATEST"
 }
 
 # PARSE_FIRMWARE_STRING <string>
