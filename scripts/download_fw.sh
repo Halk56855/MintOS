@@ -138,6 +138,7 @@ VERIFY_ODIN_PACKAGES()
 RUN_SAMLOADER_DOWNLOAD()
 {
     local OUT_PATH="$1"
+    local ATTEMPT_NUM="${2:-1}"
     local HELP_TEXT=""
     local DL_ARGS=()
 
@@ -147,8 +148,6 @@ RUN_SAMLOADER_DOWNLOAD()
         DL_ARGS+=(--model "$MODEL")
     elif grep -q -- "-m" <<< "$HELP_TEXT"; then
         DL_ARGS+=(-m "$MODEL")
-    else
-        DL_ARGS+=("$MODEL")
     fi
 
     if grep -q -- "--region" <<< "$HELP_TEXT"; then
@@ -157,26 +156,12 @@ RUN_SAMLOADER_DOWNLOAD()
         DL_ARGS+=(--csc "$CSC")
     elif grep -q -- "-r" <<< "$HELP_TEXT"; then
         DL_ARGS+=(-r "$CSC")
-    else
-        DL_ARGS+=("$CSC")
     fi
 
-    if [ -n "$IMEI" ]; then
-        if grep -q -- "--imei" <<< "$HELP_TEXT"; then
-            DL_ARGS+=(--imei "$IMEI")
-        elif grep -q -- "-i" <<< "$HELP_TEXT"; then
-            DL_ARGS+=(-i "$IMEI")
-        else
-            DL_ARGS+=("$IMEI")
-        fi
-    elif [ -n "$SERIAL_NO" ]; then
-        if grep -q -- "--serial" <<< "$HELP_TEXT"; then
-            DL_ARGS+=(--serial "$SERIAL_NO")
-        elif grep -q -- "-s" <<< "$HELP_TEXT"; then
-            DL_ARGS+=(-s "$SERIAL_NO")
-        else
-            DL_ARGS+=("$SERIAL_NO")
-        fi
+    if [ -n "$IMEI" ] && grep -q -- "--imei" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(--imei "$IMEI")
+    elif [ -n "$SERIAL_NO" ] && grep -q -- "--serial" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(--serial "$SERIAL_NO")
     fi
 
     if grep -q -- "--output" <<< "$HELP_TEXT"; then
@@ -185,6 +170,10 @@ RUN_SAMLOADER_DOWNLOAD()
         DL_ARGS+=(-o "$OUT_PATH")
     elif grep -q -- "-O" <<< "$HELP_TEXT"; then
         DL_ARGS+=(-O "$OUT_PATH")
+    fi
+
+    if [ "$ATTEMPT_NUM" -eq 1 ]; then
+        echo "$HELP_TEXT" >&2
     fi
 
     (
@@ -241,7 +230,7 @@ for i in "${FIRMWARES[@]}"; do
     COUNT=1
     # Loop until download succeeds or retries are exhausted
     while true; do
-        if RUN_SAMLOADER_DOWNLOAD "$ODIN_DIR/${MODEL}_${CSC}"; then
+        if RUN_SAMLOADER_DOWNLOAD "$ODIN_DIR/${MODEL}_${CSC}" "$COUNT"; then
             ZIP_FILE="$(find "$ODIN_DIR/${MODEL}_${CSC}" -name "*.zip" | sort -r | head -n 1)"
             if [ -n "$ZIP_FILE" ] && [ -f "$ZIP_FILE" ]; then
                 break
