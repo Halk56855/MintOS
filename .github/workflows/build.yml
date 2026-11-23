@@ -249,11 +249,23 @@ jobs:
 
           p = Path("unica/patches/bt-lib-patch/customize.sh")
           if p.exists():
-              txt = p.read_text(encoding="utf-8", errors="ignore")
-              if "480500352800805228" in txt and "|| true" not in txt:
-                  txt = txt.replace("480500352800805228", "480500352800805228")
-                  txt += '\nset +e\n'
-                  p.write_text(txt, encoding="utf-8")
+              lines = p.read_text(encoding="utf-8", errors="ignore").splitlines()
+              out = []
+              skip_block = False
+              for line in lines:
+                  if "480500352800805228" in line:
+                      out.append("# " + line)
+                      skip_block = True
+                      continue
+                  if skip_block:
+                      stripped = line.strip()
+                      if stripped == "" or stripped.startswith("#") or stripped.startswith("HEX_PATCH") or stripped.startswith("SET_PROP") or stripped.startswith("ADD_") or stripped.startswith("LOG"):
+                          skip_block = False
+                      else:
+                          out.append("# " + line)
+                          continue
+                  out.append(line)
+              p.write_text("\n".join(out) + "\n", encoding="utf-8")
           PYEOF
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] && \
               [[ "${{ github.ref }}" == "refs/heads/paradigm" ]]; then
