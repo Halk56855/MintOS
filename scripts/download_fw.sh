@@ -18,7 +18,21 @@
 
 # [
 source "$SRC_DIR/scripts/utils/firmware_utils.sh" || exit 1
-source "$TOOLS_DIR/venv/bin/activate" || exit 1
+
+export PATH="$TOOLS_DIR/venv/bin:$HOME/.cargo/bin:$PATH"
+if [ -f "$TOOLS_DIR/venv/bin/activate" ]; then
+    # shellcheck disable=SC1091
+    source "$TOOLS_DIR/venv/bin/activate" || true
+fi
+
+if ! command -v samloader >/dev/null 2>&1 && command -v samloader-rs >/dev/null 2>&1; then
+    ln -sf "$(command -v samloader-rs)" "$HOME/.cargo/bin/samloader" 2>/dev/null || true
+fi
+
+command -v samloader >/dev/null 2>&1 || {
+    LOGE "samloader (samloader-rs) was not found in PATH"
+    exit 1
+}
 
 FORCE=false
 
@@ -120,6 +134,20 @@ VERIFY_ODIN_PACKAGES()
         LOG_STEP_OUT
     done < <(find "$ODIN_DIR/${MODEL}_${CSC}" -type f -name "*.md5")
 }
+
+RUN_SAMLOADER_DOWNLOAD()
+{
+    local OUT_PATH="$1"
+    local SAM_ARGS=(-m "$MODEL" -r "$CSC")
+
+    [ -n "$IMEI" ] && SAM_ARGS+=(-i "$IMEI")
+    [ -n "$SERIAL_NO" ] && SAM_ARGS+=(-s "$SERIAL_NO")
+
+    (
+        cd "$OUT_DIR" || exit 1
+        samloader "${SAM_ARGS[@]}" download -O "$OUT_PATH"
+    )
+}
 # ]
 
 PREPARE_SCRIPT "$@"
@@ -167,28 +195,23 @@ for i in "${FIRMWARES[@]}"; do
     mkdir -p "$ODIN_DIR/${MODEL}_${CSC}"
 
     COUNT=1
-    # Loop infinetely until download succeeds
+    # Loop until download succeeds or retries are exhausted
     while true; do
-        # shellcheck disable=SC2164
-        # Anan's samloader stores its logs in the current working directory, let's move into OUT_DIR just for this time
-        (
-        cd "$OUT_DIR"
-        samloader -m "$MODEL" -r "$CSC" -i "$IMEI" -s "$SERIAL_NO" download -O "$ODIN_DIR/${MODEL}_${CSC}" 1> /dev/null || exit 1
-        )
-
-        ZIP_FILE="$(find "$ODIN_DIR/${MODEL}_${CSC}" -name "*.zip" | sort -r | head -n 1)"
-        if [ ! "$ZIP_FILE" ] || [ ! -f "$ZIP_FILE" ]; then
-            if [ $COUNT -gt 10 ]; then
-                LOGW "\033[0;31m! Download failed, check your network connection or device IMEI!\033[0m"
-                exit 1
+        if RUN_SAMLOADER_DOWNLOAD "$ODIN_DIR/${MODEL}_${CSC}"; then
+            ZIP_FILE="$(find "$ODIN_DIR/${MODEL}_${CSC}" -name "*.zip" | sort -r | head -n 1)"
+            if [ -n "$ZIP_FILE" ] && [ -f "$ZIP_FILE" ]; then
+                break
             fi
-
-            LOGW "\033[0;31m! [Attempt: $COUNT] Download failed, retrying in 5 seconds...\033[0m"
-            sleep 5
-            ((COUNT++))
-        else
-            break
         fi
+
+        if [ "$COUNT" -gt 10 ]; then
+            LOGW "\033[0;31m! Download failed, check your network connection or device IMEI!\033[0m"
+            exit 1
+        fi
+
+        LOGW "\033[0;31m! [Attempt: $COUNT] Download failed, retrying in 5 seconds...\033[0m"
+        sleep 5
+        ((COUNT++))
     done
 
     LOG "- Extracting $(basename "$ZIP_FILE")..."
@@ -201,6 +224,6 @@ for i in "${FIRMWARES[@]}"; do
     LOG_STEP_OUT; LOG_STEP_OUT
 done
 
-deactivate
+type deactivate >/dev/null 2>&1 && deactivate || true
 
 exit 0
