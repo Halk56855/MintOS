@@ -296,6 +296,8 @@ if $SAMLOADER; then
         "mkdir -p \"$TOOLS_DIR/venv/bin\""
         "ln -sf \"\$BIN_PATH\" \"$TOOLS_DIR/venv/bin/samloader-rs\""
         "ln -sf \"\$BIN_PATH\" \"$TOOLS_DIR/venv/bin/samloader\""
+        "printf '%s\n' '#!/bin/bash' 'export PATH=\"$TOOLS_DIR/venv/bin:\$HOME/.cargo/bin:\$PATH\"' > \"$TOOLS_DIR/venv/bin/activate\""
+        "chmod +x \"$TOOLS_DIR/venv/bin/activate\""
     )
 
     BUILD "samloader-rs" "$SAMLOADER_TMP" "${SAMLOADER_CMDS[@]}"
