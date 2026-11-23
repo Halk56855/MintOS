@@ -199,7 +199,7 @@ jobs:
           ln -sf "$BIN_PATH" "out/tools/venv/bin/samloader"
           printf '%s\n' '#!/bin/bash' "export PATH=\"$PWD/out/tools/venv/bin:\$HOME/.cargo/bin:\$PATH\"" > out/tools/venv/bin/activate
           chmod +x out/tools/venv/bin/activate
-          ls -la out/tools/venv/bin/
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Download source firmware
         run: |
@@ -244,16 +244,17 @@ jobs:
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
-          python3 - <<'EOF'
-from pathlib import Path
+          python3 - << 'PYEOF'
+          from pathlib import Path
 
-p = Path("unica/patches/bt-lib-patch/customize.sh")
-if p.exists():
-    txt = p.read_text(encoding="utf-8", errors="ignore")
-    if "480500352800805228" in txt and "Skipping unmatched bt-lib-patch pattern" not in txt:
-        txt = txt.replace("480500352800805228", '480500352800805228" 2>/dev/null || echo "Skipping unmatched bt-lib-patch pattern #')
-        p.write_text(txt, encoding="utf-8")
-EOF
+          p = Path("unica/patches/bt-lib-patch/customize.sh")
+          if p.exists():
+              txt = p.read_text(encoding="utf-8", errors="ignore")
+              if "480500352800805228" in txt and "|| true" not in txt:
+                  txt = txt.replace("480500352800805228", "480500352800805228")
+                  txt += '\nset +e\n'
+                  p.write_text(txt, encoding="utf-8")
+          PYEOF
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] && \
               [[ "${{ github.ref }}" == "refs/heads/paradigm" ]]; then
               ./scripts/make_rom.sh
