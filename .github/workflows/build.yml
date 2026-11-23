@@ -6,7 +6,7 @@ on:
       target_firmware:
         description: "Galaxy A04 firmware string (MODEL/CSC/IMEI_OR_SERIAL)"
         required: false
-        default: "SM-A045F/INS/352353115333368"
+        default: "SM-A045F/EUX/352353115333368"
   pull_request:
   push:
     branches:
@@ -107,7 +107,7 @@ jobs:
           fi
           FW_VAL="${{ github.event.inputs.target_firmware }}"
           if [ -z "$FW_VAL" ]; then
-            FW_VAL="SM-A045F/INS/352353115333368"
+            FW_VAL="SM-A045F/EUX/352353115333368"
           fi
           printf '%s\n' \
             '# Device configuration file for Galaxy A04 (a04) - One UI 6.1 / Android 14' \
@@ -158,26 +158,36 @@ jobs:
 
       - name: Download source firmware
         run: |
+          set -e
+          export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           source ./buildenv.sh a04
           ./scripts/download_fw.sh --ignore-target
 
       - name: Extract source firmware
         run: |
+          set -e
+          export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           source ./buildenv.sh a04
           ./scripts/extract_fw.sh --ignore-target
 
       - name: Download target firmware
         run: |
+          set -e
+          export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           source ./buildenv.sh a04
           ./scripts/download_fw.sh --ignore-source
 
       - name: Extract target firmware
         run: |
+          set -e
+          export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           source ./buildenv.sh a04
           ./scripts/extract_fw.sh --ignore-source
 
       - name: Build ROM
         run: |
+          set -e
+          export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           source ./buildenv.sh a04
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] && \
               [[ "${{ github.ref }}" == "refs/heads/paradigm" ]]; then
