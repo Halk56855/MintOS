@@ -138,14 +138,58 @@ VERIFY_ODIN_PACKAGES()
 RUN_SAMLOADER_DOWNLOAD()
 {
     local OUT_PATH="$1"
-    local SAM_ARGS=(-m "$MODEL" -r "$CSC")
+    local HELP_TEXT=""
+    local DL_ARGS=()
 
-    [ -n "$IMEI" ] && SAM_ARGS+=(-i "$IMEI")
-    [ -n "$SERIAL_NO" ] && SAM_ARGS+=(-s "$SERIAL_NO")
+    HELP_TEXT="$(samloader download --help 2>&1 || true)"
+
+    if grep -q -- "--model" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(--model "$MODEL")
+    elif grep -q -- "-m" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(-m "$MODEL")
+    else
+        DL_ARGS+=("$MODEL")
+    fi
+
+    if grep -q -- "--region" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(--region "$CSC")
+    elif grep -q -- "--csc" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(--csc "$CSC")
+    elif grep -q -- "-r" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(-r "$CSC")
+    else
+        DL_ARGS+=("$CSC")
+    fi
+
+    if [ -n "$IMEI" ]; then
+        if grep -q -- "--imei" <<< "$HELP_TEXT"; then
+            DL_ARGS+=(--imei "$IMEI")
+        elif grep -q -- "-i" <<< "$HELP_TEXT"; then
+            DL_ARGS+=(-i "$IMEI")
+        else
+            DL_ARGS+=("$IMEI")
+        fi
+    elif [ -n "$SERIAL_NO" ]; then
+        if grep -q -- "--serial" <<< "$HELP_TEXT"; then
+            DL_ARGS+=(--serial "$SERIAL_NO")
+        elif grep -q -- "-s" <<< "$HELP_TEXT"; then
+            DL_ARGS+=(-s "$SERIAL_NO")
+        else
+            DL_ARGS+=("$SERIAL_NO")
+        fi
+    fi
+
+    if grep -q -- "--output" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(--output "$OUT_PATH")
+    elif grep -q -- "-o" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(-o "$OUT_PATH")
+    elif grep -q -- "-O" <<< "$HELP_TEXT"; then
+        DL_ARGS+=(-O "$OUT_PATH")
+    fi
 
     (
         cd "$OUT_DIR" || exit 1
-        samloader "${SAM_ARGS[@]}" download -O "$OUT_PATH"
+        samloader download "${DL_ARGS[@]}"
     )
 }
 # ]
