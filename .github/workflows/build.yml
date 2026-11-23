@@ -87,9 +87,13 @@ jobs:
           cargo install --git https://github.com/topjohnwu/samloader-rs.git samloader
           BIN_PATH="$(command -v samloader || command -v samloader-rs)"
           [ -n "$BIN_PATH" ]
-          ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader-rs"
-          ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader"
-          mkdir -p out/tools/venv/bin
+          mkdir -p out/tools/venv/bin "$HOME/.cargo/bin"
+          if [ "$BIN_PATH" != "$HOME/.cargo/bin/samloader" ]; then
+            ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader"
+          fi
+          if [ "$BIN_PATH" != "$HOME/.cargo/bin/samloader-rs" ]; then
+            ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader-rs"
+          fi
           ln -sf "$BIN_PATH" "out/tools/venv/bin/samloader-rs"
           ln -sf "$BIN_PATH" "out/tools/venv/bin/samloader"
           printf '%s\n' '#!/bin/bash' "export PATH=\"$PWD/out/tools/venv/bin:\$HOME/.cargo/bin:\$PATH\"" > out/tools/venv/bin/activate
@@ -185,8 +189,12 @@ jobs:
           fi
           [ -n "$BIN_PATH" ]
           mkdir -p out/tools/venv/bin "$HOME/.cargo/bin"
-          ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader-rs"
-          ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader"
+          if [ "$BIN_PATH" != "$HOME/.cargo/bin/samloader" ]; then
+            ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader"
+          fi
+          if [ "$BIN_PATH" != "$HOME/.cargo/bin/samloader-rs" ]; then
+            ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader-rs"
+          fi
           ln -sf "$BIN_PATH" "out/tools/venv/bin/samloader-rs"
           ln -sf "$BIN_PATH" "out/tools/venv/bin/samloader"
           printf '%s\n' '#!/bin/bash' "export PATH=\"$PWD/out/tools/venv/bin:\$HOME/.cargo/bin:\$PATH\"" > out/tools/venv/bin/activate
