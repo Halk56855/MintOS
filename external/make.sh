@@ -60,6 +60,18 @@ CHECK_TOOLS()
     $EXISTS
 }
 
+CHECK_SAMLOADER()
+{
+    export PATH="$HOME/.cargo/bin:$PATH"
+    if [ -x "$TOOLS_DIR/venv/bin/samloader" ] || \
+       [ -x "$TOOLS_DIR/venv/bin/samloader-rs" ] || \
+       command -v samloader-rs >/dev/null 2>&1 || \
+       command -v samloader >/dev/null 2>&1; then
+        return 0
+    fi
+    return 1
+}
+
 GET_CMAKE_FLAGS()
 {
     local FLAGS
@@ -171,10 +183,7 @@ MAGISKBOOT_EXEC=(
     "magiskboot"
 )
 CHECK_TOOLS "${MAGISKBOOT_EXEC[@]}" && MAGISKBOOT=false
-SAMLOADER_EXEC=(
-    "../venv/bin/samloader"
-)
-CHECK_TOOLS "${SAMLOADER_EXEC[@]}" && SAMLOADER=false
+CHECK_SAMLOADER && SAMLOADER=false
 SIGNAPK_EXEC=(
     "signapk" "signapk.jar"
 )
@@ -275,12 +284,22 @@ if $MAGISKBOOT; then
     rm -rf "$MAGISKBOOT_TMP"
 fi
 if $SAMLOADER; then
+    SAMLOADER_TMP="$(mktemp -d)"
     SAMLOADER_CMDS=(
-        "python3 -m venv \"$TOOLS_DIR/venv\""
-        "source \"$TOOLS_DIR/venv/bin/activate\"; pip3 install ."
+        "export PATH=\"\$HOME/.cargo/bin:\$PATH\""
+        "if ! command -v rustup >/dev/null 2>&1; then curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal; else rustup toolchain install stable --profile minimal && rustup default stable; fi"
+        "cargo install --git https://github.com/topjohnwu/samloader-rs.git --locked || cargo install --git https://github.com/topjohnwu/samloader-rs.git"
+        "BIN_PATH=\"\$(command -v samloader-rs || command -v samloader)\""
+        "[ -n \"\$BIN_PATH\" ]"
+        "ln -sf \"\$BIN_PATH\" \"\$HOME/.cargo/bin/samloader-rs\""
+        "ln -sf \"\$BIN_PATH\" \"\$HOME/.cargo/bin/samloader\""
+        "mkdir -p \"$TOOLS_DIR/venv/bin\""
+        "ln -sf \"\$BIN_PATH\" \"$TOOLS_DIR/venv/bin/samloader-rs\""
+        "ln -sf \"\$BIN_PATH\" \"$TOOLS_DIR/venv/bin/samloader\""
     )
 
-    BUILD "samloader" "$SRC_DIR/external/samloader" "${SAMLOADER_CMDS[@]}"
+    BUILD "samloader-rs" "$SAMLOADER_TMP" "${SAMLOADER_CMDS[@]}"
+    rm -rf "$SAMLOADER_TMP"
 fi
 if $SIGNAPK; then
     SIGNAPK_CMDS=(
