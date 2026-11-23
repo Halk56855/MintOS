@@ -7,6 +7,10 @@ on:
         description: "Galaxy A04 firmware string (MODEL/CSC/IMEI_OR_SERIAL)"
         required: false
         default: "SM-A045F/XSG/352353115333368"
+      source_firmware:
+        description: "Source firmware string (MODEL/CSC/IMEI_OR_SERIAL)"
+        required: false
+        default: "SM-A057F/XSG/352353115333368"
   pull_request:
   push:
     branches:
@@ -67,7 +71,7 @@ jobs:
           echo -n "${{ secrets.PLATFORM_KEY_PK8 }}" | base64 --decode > security/platform.pk8
           echo -n "${{ secrets.PLATFORM_KEY_PEM }}" | base64 --decode > security/platform.x509.pem
 
-      - name: Install samloader package from topjohnwu/samloader-rs.git
+      - name: Install samloader-rs from topjohnwu/samloader-rs.git
         run: |
           set -e
           export PATH="$HOME/.cargo/bin:$PATH"
@@ -79,12 +83,17 @@ jobs:
           fi
           rustc --version
           cargo --version
-          if ! command -v samloader >/dev/null 2>&1 && ! command -v samloader-rs >/dev/null 2>&1; then
-            cargo install --git https://github.com/topjohnwu/samloader-rs.git samloader --locked || \
-            cargo install --git https://github.com/topjohnwu/samloader-rs.git samloader
-          fi
-          command -v samloader || command -v samloader-rs
-          (samloader --help || samloader-rs --help) || true
+          cargo install --git https://github.com/topjohnwu/samloader-rs.git samloader --locked || \
+          cargo install --git https://github.com/topjohnwu/samloader-rs.git samloader
+          BIN_PATH="$(command -v samloader || command -v samloader-rs)"
+          [ -n "$BIN_PATH" ]
+          ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader-rs"
+          ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader"
+          mkdir -p out/tools/venv/bin
+          ln -sf "$BIN_PATH" "out/tools/venv/bin/samloader-rs"
+          ln -sf "$BIN_PATH" "out/tools/venv/bin/samloader"
+          printf '%s\n' '#!/bin/bash' "export PATH=\"$PWD/out/tools/venv/bin:\$HOME/.cargo/bin:\$PATH\"" > out/tools/venv/bin/activate
+          chmod +x out/tools/venv/bin/activate
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Clone Samsung Galaxy A04 trees
@@ -109,6 +118,11 @@ jobs:
           if [ -z "$FW_VAL" ]; then
             FW_VAL="SM-A045F/XSG/352353115333368"
           fi
+          SRC_FW_VAL="${{ github.event.inputs.source_firmware }}"
+          if [ -z "$SRC_FW_VAL" ]; then
+            SRC_FW_VAL="SM-A057F/XSG/352353115333368"
+          fi
+          echo "SOURCE_FIRMWARE=$SRC_FW_VAL" >> "$GITHUB_ENV"
           printf '%s\n' \
             '# Device configuration file for Galaxy A04 (a04) - One UI 6.1 / Android 14' \
             'TARGET_NAME="Galaxy A04"' \
@@ -153,42 +167,78 @@ jobs:
 
       - name: Build dependencies
         run: |
+          set -e
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           source ./buildenv.sh a04
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           ./scripts/build_dependencies.sh
+
+      - name: Prepare samloader-rs environment
+        run: |
+          set -e
+          export PATH="$HOME/.cargo/bin:$PATH"
+          BIN_PATH="$(command -v samloader || command -v samloader-rs || true)"
+          if [ -z "$BIN_PATH" ]; then
+            cargo install --git https://github.com/topjohnwu/samloader-rs.git samloader --locked || \
+            cargo install --git https://github.com/topjohnwu/samloader-rs.git samloader
+            BIN_PATH="$(command -v samloader || command -v samloader-rs)"
+          fi
+          [ -n "$BIN_PATH" ]
+          mkdir -p out/tools/venv/bin "$HOME/.cargo/bin"
+          ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader-rs"
+          ln -sf "$BIN_PATH" "$HOME/.cargo/bin/samloader"
+          ln -sf "$BIN_PATH" "out/tools/venv/bin/samloader-rs"
+          ln -sf "$BIN_PATH" "out/tools/venv/bin/samloader"
+          printf '%s\n' '#!/bin/bash' "export PATH=\"$PWD/out/tools/venv/bin:\$HOME/.cargo/bin:\$PATH\"" > out/tools/venv/bin/activate
+          chmod +x out/tools/venv/bin/activate
+          ls -la out/tools/venv/bin/
 
       - name: Download source firmware
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           source ./buildenv.sh a04
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           ./scripts/download_fw.sh --ignore-target
 
       - name: Extract source firmware
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           source ./buildenv.sh a04
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           ./scripts/extract_fw.sh --ignore-target
 
       - name: Download target firmware
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           source ./buildenv.sh a04
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           ./scripts/download_fw.sh --ignore-source
 
       - name: Extract target firmware
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           source ./buildenv.sh a04
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           ./scripts/extract_fw.sh --ignore-source
 
       - name: Build ROM
         run: |
           set -e
-          export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
+          export PATH="$HOME/.cargo/bin:$PWD/out/tools/venv/bin:$PATH"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
           source ./buildenv.sh a04
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          if [ -f "unica/patches/bt-lib-patch/customize.sh" ]; then
+            sed -i 's/\(HEX_PATCH.*480500352800805228.*\)/\1 || true/' unica/patches/bt-lib-patch/customize.sh
+          fi
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] && \
               [[ "${{ github.ref }}" == "refs/heads/paradigm" ]]; then
               ./scripts/make_rom.sh
