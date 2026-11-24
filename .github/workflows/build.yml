@@ -135,10 +135,22 @@ jobs:
           if [ -z "$FW_VAL" ]; then
             FW_VAL="SM-A045F/XSG/352353115333368"
           fi
-          SRC_FW_VAL="${{ github.event.inputs.source_firmware }}"
-          if [ -z "$SRC_FW_VAL" ]; then
-            SRC_FW_VAL="SM-A057F/XXV/357533641234561"
-          fi
+          SRC_FW_VAL="SM-A057F/XXV/357533641234561"
+
+          python3 - << 'PYEOF'
+          from pathlib import Path
+
+          for d in [Path("target/a04"), Path("target/a05s")]:
+              if d.exists():
+                  for f in d.rglob("*"):
+                      if f.is_file():
+                          try:
+                              txt = f.read_text(encoding="utf-8", errors="ignore")
+                              if "SM-S916B" in txt:
+                                  f.write_text(txt.replace("SM-S916B/XTC/350373341234562", "SM-A057F/XXV/357533641234561").replace("SM-S916B", "SM-A057F"), encoding="utf-8")
+                          except Exception:
+                              pass
+          PYEOF
 
           resolve_ssi() {
             for candidate in "$1" "$2" "qssi" "essi" "self"; do
@@ -234,6 +246,7 @@ jobs:
           ensure_vars(Path("target/a05s/config.sh"), a05s_defaults)
           PYEOF
 
+          echo "Using SOURCE_FIRMWARE=$SRC_FW_VAL and TARGET_SINGLE_SYSTEM_IMAGE=$SSI_VAL"
           cat target/a04/config.sh
 
       - name: Set up JDK 11
@@ -246,10 +259,10 @@ jobs:
       - name: Build dependencies
         run: |
           set -e
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           ./scripts/build_dependencies.sh
 
@@ -281,10 +294,10 @@ jobs:
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           ./scripts/download_fw.sh --ignore-target
 
@@ -292,10 +305,10 @@ jobs:
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           ./scripts/extract_fw.sh --ignore-target
 
@@ -303,10 +316,10 @@ jobs:
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           ./scripts/download_fw.sh --ignore-source
 
@@ -314,10 +327,10 @@ jobs:
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           ./scripts/extract_fw.sh --ignore-source
 
@@ -325,14 +338,14 @@ jobs:
         run: |
           set -e
           export PATH="$HOME/.cargo/bin:$PWD/out/tools/venv/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           if [ -d "unica/patches/deknox" ]; then
-            find unica/patches/deknox -type f \( -name "*DualDAR*" -o -name "*StorageManager*" -o -name "*SystemServer*" -o -name "*.patch" \) | while read -r pf; do
-              if grep -qE "DualDARPolicy|getHdmVersion|StorageManager\.apk|SystemServer\$\$ExternalSyntheticLambda10|Blockchain Service|SemAuthnrService" "$pf" 2>/dev/null || [[ "$pf" == *"StorageManager"* || "$pf" == *"SystemServer"* ]]; then
+            find unica/patches/deknox -type f \( -name "*DualDAR*" -o -name "*StorageManager*" -o -name "*SystemServer*" -o -name "*MdfUtils*" -o -name "*.patch" \) | while read -r pf; do
+              if grep -qE "DualDARPolicy|getHdmVersion|StorageManager\.apk|SystemServer\$\$ExternalSyntheticLambda10|Blockchain Service|SemAuthnrService|MdfUtils|BAD_COUNTRY_2LDS|Could not link the library" "$pf" 2>/dev/null || [[ "$pf" == *"StorageManager"* || "$pf" == *"SystemServer"* || "$pf" == *"MdfUtils"* ]]; then
                 echo "Removing incompatible patch: $pf"
                 rm -f "$pf"
               fi
