@@ -362,6 +362,14 @@ jobs:
               fi
             done
           fi
+          if [ -d "unica/mods/applock" ]; then
+            find unica/mods/applock -type f \( -name "*CoreRune*" -o -name "*.patch" \) | while read -r pf; do
+              if grep -qE "CoreRune\.smali|FW_SUPPORT_APPLOCK|FW_APPLOCK|Force AppLock support" "$pf" 2>/dev/null || [[ "$pf" == *"CoreRune"* || "$pf" == *"AppLock"* ]]; then
+                echo "Removing incompatible AppLock patch: $pf"
+                rm -f "$pf"
+              fi
+            done
+          fi
           bt_patch="unica/patches/bt-lib-patch/customize.sh"
           if [ -f "$bt_patch" ]; then
             printf '#!/usr/bin/env bash\nexit 0\n' > "$bt_patch"
