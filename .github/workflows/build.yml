@@ -160,32 +160,50 @@ jobs:
           echo "SOURCE_FIRMWARE=$SRC_FW_VAL" >> "$GITHUB_ENV"
           echo "TARGET_SINGLE_SYSTEM_IMAGE=$SSI_VAL" >> "$GITHUB_ENV"
 
-          if [ ! -f "target/a04/config.sh" ]; then
-            printf '%s\n' \
-              '# Device configuration file for Galaxy A04 (a04)' \
-              'TARGET_NAME="Galaxy A04"' \
-              'TARGET_CODENAME="a04"' \
-              "TARGET_FIRMWARE=\"$FW_VAL\"" \
-              'TARGET_EXTRA_FIRMWARES=()' \
-              "TARGET_SINGLE_SYSTEM_IMAGE=\"$SSI_VAL\"" \
-              'TARGET_OS_FILE_SYSTEM="erofs"' \
-              'TARGET_HAS_SYSTEM_EXT=false' \
-              > target/a04/config.sh
-          else
-            if grep -q '^TARGET_SINGLE_SYSTEM_IMAGE=' target/a04/config.sh; then
-              sed -i "s/^TARGET_SINGLE_SYSTEM_IMAGE=.*/TARGET_SINGLE_SYSTEM_IMAGE=\"$SSI_VAL\"/" target/a04/config.sh
-            else
-              printf '\nTARGET_SINGLE_SYSTEM_IMAGE="%s"\n' "$SSI_VAL" >> target/a04/config.sh
-            fi
-          fi
+          python3 - << PYEOF
+          from pathlib import Path
+          import re
 
-          if [ -f "target/a05s/config.sh" ]; then
-            if grep -q '^TARGET_SINGLE_SYSTEM_IMAGE=' target/a05s/config.sh; then
-              sed -i "s/^TARGET_SINGLE_SYSTEM_IMAGE=.*/TARGET_SINGLE_SYSTEM_IMAGE=\"$SSI_VAL\"/" target/a05s/config.sh
-            fi
-          fi
+          fw_val = "${FW_VAL}"
+          ssi_val = "${SSI_VAL}"
 
-          echo "Using TARGET_SINGLE_SYSTEM_IMAGE=$SSI_VAL"
+          def ensure_vars(cfg_path: Path, defaults: dict):
+              if not cfg_path.exists():
+                  cfg_path.write_text("# Auto-generated config\n", encoding="utf-8")
+              txt = cfg_path.read_text(encoding="utf-8", errors="ignore")
+              m_sdk = re.search(r'^TARGET_PLATFORM_SDK_VERSION=(.+)$', txt, re.M)
+              if m_sdk and not re.search(r'^TARGET_API_LEVEL=', txt, re.M):
+                  txt += f"\nTARGET_API_LEVEL={m_sdk.group(1).strip()}\n"
+              for k, v in defaults.items():
+                  if not re.search(rf'^{re.escape(k)}=', txt, re.M):
+                      txt += f"\n{k}={v}\n"
+              cfg_path.write_text(txt, encoding="utf-8")
+
+          a04_defaults = {
+              "TARGET_NAME": '"Galaxy A04"',
+              "TARGET_CODENAME": '"a04"',
+              "TARGET_FIRMWARE": f'"{fw_val}"',
+              "TARGET_EXTRA_FIRMWARES": "()",
+              "TARGET_API_LEVEL": "34",
+              "TARGET_PRODUCT_FIRST_API_LEVEL": "32",
+              "TARGET_VENDOR_API_LEVEL": "31",
+              "TARGET_SINGLE_SYSTEM_IMAGE": f'"{ssi_val}"',
+              "TARGET_OS_FILE_SYSTEM": '"erofs"',
+              "TARGET_SUPER_PARTITION_SIZE": "7029653504",
+              "TARGET_SUPER_GROUP_SIZE": "7025459200",
+              "TARGET_HAS_SYSTEM_EXT": "true",
+          }
+          ensure_vars(Path("target/a04/config.sh"), a04_defaults)
+
+          a05s_defaults = {
+              "TARGET_API_LEVEL": "35",
+              "TARGET_PRODUCT_FIRST_API_LEVEL": "33",
+              "TARGET_VENDOR_API_LEVEL": "33",
+              "TARGET_HAS_SYSTEM_EXT": "true",
+          }
+          ensure_vars(Path("target/a05s/config.sh"), a05s_defaults)
+          PYEOF
+
           cat target/a04/config.sh
 
       - name: Set up JDK 11
