@@ -331,8 +331,8 @@ jobs:
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
           if [ -d "unica/patches/deknox" ]; then
-            find unica/patches/deknox -type f \( -name "*DualDAR*" -o -name "*StorageManager*" -o -name "*.patch" \) | while read -r pf; do
-              if grep -qE "DualDARPolicy|getHdmVersion|StorageManager\.apk" "$pf" 2>/dev/null || [[ "$pf" == *"StorageManager"* ]]; then
+            find unica/patches/deknox -type f \( -name "*DualDAR*" -o -name "*StorageManager*" -o -name "*SystemServer*" -o -name "*.patch" \) | while read -r pf; do
+              if grep -qE "DualDARPolicy|getHdmVersion|StorageManager\.apk|SystemServer\$\$ExternalSyntheticLambda10|Blockchain Service|SemAuthnrService" "$pf" 2>/dev/null || [[ "$pf" == *"StorageManager"* || "$pf" == *"SystemServer"* ]]; then
                 echo "Removing incompatible patch: $pf"
                 rm -f "$pf"
               fi
