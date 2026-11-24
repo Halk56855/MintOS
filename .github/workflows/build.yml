@@ -10,7 +10,7 @@ on:
       source_firmware:
         description: "Source firmware string (MODEL/CSC/IMEI_OR_SERIAL)"
         required: false
-        default: "SM-A057F/XSG/352353115333368"
+        default: "SM-A057F/XXV/357533641234561"
   pull_request:
   push:
     branches:
@@ -25,6 +25,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: false
+
+      - name: Sync target/a04 and target/a05s from UN1CA-a04-a34x (sixteen)
+        run: |
+          set -e
+          rm -rf /tmp/unica_src
+          git clone --depth=1 --branch sixteen https://github.com/DaniHasReal/UN1CA-a04-a34x.git /tmp/unica_src
+          mkdir -p target/a04 target/a05s
+          if [ -d "/tmp/unica_src/target/a04" ]; then
+            cp -rn /tmp/unica_src/target/a04/. target/a04/ || true
+          fi
+          if [ -d "/tmp/unica_src/target/a05s" ]; then
+            cp -rn /tmp/unica_src/target/a05s/. target/a05s/ || true
+          fi
+          rm -rf /tmp/unica_src
+          ls -la target/a04 target/a05s
 
       - name: Initialize submodules (skip broken target/a53x/patches/vendor)
         run: |
@@ -115,51 +130,24 @@ jobs:
         run: |
           set -e
           mkdir -p target/a04
-          if [ -d "target/a51" ]; then
-            cp -rn target/a51/. target/a04/ || true
-          fi
           FW_VAL="${{ github.event.inputs.target_firmware }}"
           if [ -z "$FW_VAL" ]; then
             FW_VAL="SM-A045F/XSG/352353115333368"
           fi
           SRC_FW_VAL="${{ github.event.inputs.source_firmware }}"
           if [ -z "$SRC_FW_VAL" ]; then
-            SRC_FW_VAL="SM-A057F/XSG/352353115333368"
+            SRC_FW_VAL="SM-A057F/XXV/357533641234561"
           fi
           echo "SOURCE_FIRMWARE=$SRC_FW_VAL" >> "$GITHUB_ENV"
-          printf '%s\n' \
-            '# Device configuration file for Galaxy A04 (a04) - One UI 6.1 / Android 14' \
-            'TARGET_NAME="Galaxy A04"' \
-            'TARGET_CODENAME="a04"' \
-            "TARGET_FIRMWARE=\"$FW_VAL\"" \
-            'TARGET_PRODUCT_FIRST_API_LEVEL=32' \
-            'TARGET_EXTRA_FIRMWARES=()' \
-            'TARGET_API_LEVEL=34' \
-            'TARGET_VENDOR_API_LEVEL=34' \
-            'TARGET_SINGLE_SYSTEM_IMAGE="essi"' \
-            'TARGET_OS_FILE_SYSTEM="erofs"' \
-            'TARGET_SUPER_PARTITION_SIZE=6836715520' \
-            'TARGET_SUPER_GROUP_SIZE=6832521216' \
-            'TARGET_HAS_SYSTEM_EXT=false' \
-            'TARGET_FP_SENSOR_CONFIG="none"' \
-            'TARGET_SSRM_CONFIG_NAME="siop_a04_mt6765"' \
-            'TARGET_MDNIE_SUPPORTED_MODES="45073"' \
-            'TARGET_AUDIO_SUPPORT_ACH_RINGTONE=false' \
-            'TARGET_AUDIO_SUPPORT_DUAL_SPEAKER=false' \
-            'TARGET_AUDIO_SUPPORT_VIRTUAL_VIBRATION=false' \
-            'TARGET_AUTO_BRIGHTNESS_TYPE="3"' \
-            'TARGET_DVFS_CONFIG_NAME="dvfs_policy_mt6765_xx"' \
-            'TARGET_HAS_HW_MDNIE=false' \
-            'TARGET_HAS_MASS_CAMERA_APP=true' \
-            'TARGET_HAS_QHD_DISPLAY=false' \
-            'TARGET_HFR_MODE="1"' \
-            'TARGET_HFR_SUPPORTED_REFRESH_RATE="60"' \
-            'TARGET_HFR_DEFAULT_REFRESH_RATE="60"' \
-            'TARGET_IS_ESIM_SUPPORTED=false' \
-            'TARGET_MDNIE_WEAKNESS_SOLUTION_FUNCTION="0"' \
-            'TARGET_MULTI_MIC_MANAGER_VERSION="07010"' \
-            'TARGET_SUPPORT_CUTOUT_PROTECTION=false' \
-            > target/a04/config.sh
+          if [ ! -f "target/a04/config.sh" ]; then
+            printf '%s\n' \
+              '# Device configuration file for Galaxy A04 (a04)' \
+              'TARGET_NAME="Galaxy A04"' \
+              'TARGET_CODENAME="a04"' \
+              "TARGET_FIRMWARE=\"$FW_VAL\"" \
+              'TARGET_EXTRA_FIRMWARES=()' \
+              > target/a04/config.sh
+          fi
           cat target/a04/config.sh
 
       - name: Set up JDK 11
@@ -172,9 +160,9 @@ jobs:
       - name: Build dependencies
         run: |
           set -e
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           ./scripts/build_dependencies.sh
 
       - name: Prepare samloader-rs environment
@@ -205,45 +193,45 @@ jobs:
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           ./scripts/download_fw.sh --ignore-target
 
       - name: Extract source firmware
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           ./scripts/extract_fw.sh --ignore-target
 
       - name: Download target firmware
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           ./scripts/download_fw.sh --ignore-source
 
       - name: Extract target firmware
         run: |
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           ./scripts/extract_fw.sh --ignore-source
 
       - name: Build ROM
         run: |
           set -e
           export PATH="$HOME/.cargo/bin:$PWD/out/tools/venv/bin:$PATH"
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           source ./buildenv.sh a04
-          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XSG/352353115333368}"
+          export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           python3 - << 'PYEOF'
           from pathlib import Path
 
