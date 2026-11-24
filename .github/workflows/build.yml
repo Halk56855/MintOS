@@ -33,13 +33,16 @@ jobs:
           git clone --depth=1 --branch sixteen https://github.com/DaniHasReal/UN1CA-a04-a34x.git /tmp/unica_src
           mkdir -p target/a04 target/a05s
           if [ -d "/tmp/unica_src/target/a04" ]; then
-            cp -rn /tmp/unica_src/target/a04/. target/a04/ || true
+            cp -rf /tmp/unica_src/target/a04/. target/a04/
           fi
           if [ -d "/tmp/unica_src/target/a05s" ]; then
-            cp -rn /tmp/unica_src/target/a05s/. target/a05s/ || true
+            cp -rf /tmp/unica_src/target/a05s/. target/a05s/
           fi
           rm -rf /tmp/unica_src
-          ls -la target/a04 target/a05s
+          echo "--- target/a04/config.sh ---"
+          cat target/a04/config.sh || true
+          echo "--- target/a05s/config.sh ---"
+          cat target/a05s/config.sh || true
 
       - name: Initialize submodules (skip broken target/a53x/patches/vendor)
         run: |
@@ -139,6 +142,8 @@ jobs:
             SRC_FW_VAL="SM-A057F/XXV/357533641234561"
           fi
           echo "SOURCE_FIRMWARE=$SRC_FW_VAL" >> "$GITHUB_ENV"
+          echo "SOURCE_OS_SINGLE_SYSTEM_IMAGE=qssi" >> "$GITHUB_ENV"
+          echo "TARGET_OS_SINGLE_SYSTEM_IMAGE=mssi" >> "$GITHUB_ENV"
           if [ ! -f "target/a04/config.sh" ]; then
             printf '%s\n' \
               '# Device configuration file for Galaxy A04 (a04)' \
@@ -161,8 +166,12 @@ jobs:
         run: |
           set -e
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           ./scripts/build_dependencies.sh
 
       - name: Prepare samloader-rs environment
@@ -194,8 +203,12 @@ jobs:
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           ./scripts/download_fw.sh --ignore-target
 
       - name: Extract source firmware
@@ -203,8 +216,12 @@ jobs:
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           ./scripts/extract_fw.sh --ignore-target
 
       - name: Download target firmware
@@ -212,8 +229,12 @@ jobs:
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           ./scripts/download_fw.sh --ignore-source
 
       - name: Extract target firmware
@@ -221,8 +242,12 @@ jobs:
           set -e
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           ./scripts/extract_fw.sh --ignore-source
 
       - name: Build ROM
@@ -230,8 +255,12 @@ jobs:
           set -e
           export PATH="$HOME/.cargo/bin:$PWD/out/tools/venv/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
+          export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
           python3 - << 'PYEOF'
           from pathlib import Path
 
