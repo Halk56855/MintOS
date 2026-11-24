@@ -371,8 +371,8 @@ jobs:
             done
           fi
           if [ -d "unica/mods/hooks" ]; then
-            find unica/mods/hooks -type f \( -name "*SamsungPropsHooks*" -o -name "*Instrumentation*" -o -name "*SystemProperties*" -o -name "*.patch" \) | while read -r pf; do
-              if grep -qE "SamsungPropsHooks|Instrumentation\.smali|SystemProperties\.smali|Introduce SamsungPropsHooks" "$pf" 2>/dev/null || [[ "$pf" == *"SamsungPropsHooks"* ]]; then
+            find unica/mods/hooks -type f \( -name "*SamsungPropsHooks*" -o -name "*Instrumentation*" -o -name "*SystemProperties*" -o -name "*FloatingFeatureHooks*" -o -name "*SemFloatingFeature*" -o -name "*.patch" \) | while read -r pf; do
+              if grep -qE "SamsungPropsHooks|Instrumentation\.smali|SystemProperties\.smali|Introduce SamsungPropsHooks|FloatingFeatureHooks|SemFloatingFeature\.smali|Introduce FloatingFeatureHooks" "$pf" 2>/dev/null || [[ "$pf" == *"SamsungPropsHooks"* || "$pf" == *"FloatingFeatureHooks"* || "$pf" == *"SemFloatingFeature"* ]]; then
                 echo "Removing incompatible hooks patch: $pf"
                 rm -f "$pf"
               fi
