@@ -39,10 +39,8 @@ jobs:
             cp -rf /tmp/unica_src/target/a05s/. target/a05s/
           fi
           rm -rf /tmp/unica_src
-          echo "--- target/a04/config.sh ---"
-          cat target/a04/config.sh || true
-          echo "--- target/a05s/config.sh ---"
-          cat target/a05s/config.sh || true
+          echo "--- Available unica/configs ---"
+          ls -1 unica/configs || true
 
       - name: Initialize submodules (skip broken target/a53x/patches/vendor)
         run: |
@@ -129,10 +127,10 @@ jobs:
           echo "A04_VENDOR_TREE=$HOME/a04_trees/vendor" >> "$GITHUB_ENV"
           echo "A04_KERNEL_TREE=$HOME/a04_trees/kernel" >> "$GITHUB_ENV"
 
-      - name: Prepare or verify target/a04
+      - name: Prepare or verify target/a04 and unica/configs
         run: |
           set -e
-          mkdir -p target/a04
+          mkdir -p target/a04 unica/configs
           FW_VAL="${{ github.event.inputs.target_firmware }}"
           if [ -z "$FW_VAL" ]; then
             FW_VAL="SM-A045F/XSG/352353115333368"
@@ -141,19 +139,36 @@ jobs:
           if [ -z "$SRC_FW_VAL" ]; then
             SRC_FW_VAL="SM-A057F/XXV/357533641234561"
           fi
+
+          resolve_sys_img() {
+            local candidate="$1"
+            local fallback="$2"
+            if [ -n "$candidate" ] && [ -f "unica/configs/${candidate}.sh" ]; then
+              printf '%s' "$candidate"
+            elif [ -n "$fallback" ] && [ -f "unica/configs/${fallback}.sh" ]; then
+              printf '%s' "$fallback"
+            else
+              local first_cfg
+              first_cfg="$(find unica/configs -maxdepth 1 -type f -name '*.sh' ! -name 'version.sh' | sort | head -n 1)"
+              basename "$first_cfg" .sh
+            fi
+          }
+
+          SRC_IMG="$(resolve_sys_img "qssi" "self")"
+          TGT_IMG="$(resolve_sys_img "essi" "self")"
+
           echo "SOURCE_FIRMWARE=$SRC_FW_VAL" >> "$GITHUB_ENV"
-          echo "SOURCE_OS_SINGLE_SYSTEM_IMAGE=qssi" >> "$GITHUB_ENV"
-          echo "TARGET_OS_SINGLE_SYSTEM_IMAGE=mssi" >> "$GITHUB_ENV"
-          if [ ! -f "target/a04/config.sh" ]; then
-            printf '%s\n' \
-              '# Device configuration file for Galaxy A04 (a04)' \
-              'TARGET_NAME="Galaxy A04"' \
-              'TARGET_CODENAME="a04"' \
-              "TARGET_FIRMWARE=\"$FW_VAL\"" \
-              'TARGET_EXTRA_FIRMWARES=()' \
-              > target/a04/config.sh
+          echo "SOURCE_OS_SINGLE_SYSTEM_IMAGE=$SRC_IMG" >> "$GITHUB_ENV"
+          echo "TARGET_OS_SINGLE_SYSTEM_IMAGE=$TGT_IMG" >> "$GITHUB_ENV"
+
+          if [ -f "target/a04/config.sh" ]; then
+            sed -i "s/^TARGET_OS_SINGLE_SYSTEM_IMAGE=.*/TARGET_OS_SINGLE_SYSTEM_IMAGE=\"$TGT_IMG\"/" target/a04/config.sh || true
           fi
-          cat target/a04/config.sh
+          if [ -f "target/a05s/config.sh" ]; then
+            sed -i "s/^TARGET_OS_SINGLE_SYSTEM_IMAGE=.*/TARGET_OS_SINGLE_SYSTEM_IMAGE=\"$SRC_IMG\"/" target/a05s/config.sh || true
+          fi
+          echo "Resolved SOURCE_OS_SINGLE_SYSTEM_IMAGE=$SRC_IMG"
+          echo "Resolved TARGET_OS_SINGLE_SYSTEM_IMAGE=$TGT_IMG"
 
       - name: Set up JDK 11
         uses: actions/setup-java@v4
@@ -167,11 +182,11 @@ jobs:
           set -e
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           ./scripts/build_dependencies.sh
 
       - name: Prepare samloader-rs environment
@@ -204,11 +219,11 @@ jobs:
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           ./scripts/download_fw.sh --ignore-target
 
       - name: Extract source firmware
@@ -217,11 +232,11 @@ jobs:
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           ./scripts/extract_fw.sh --ignore-target
 
       - name: Download target firmware
@@ -230,11 +245,11 @@ jobs:
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           ./scripts/download_fw.sh --ignore-source
 
       - name: Extract target firmware
@@ -243,11 +258,11 @@ jobs:
           export PATH="$PWD/out/tools/venv/bin:$HOME/.cargo/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           ./scripts/extract_fw.sh --ignore-source
 
       - name: Build ROM
@@ -256,11 +271,11 @@ jobs:
           export PATH="$HOME/.cargo/bin:$PWD/out/tools/venv/bin:$PATH"
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export SOURCE_OS_SINGLE_SYSTEM_IMAGE="${SOURCE_OS_SINGLE_SYSTEM_IMAGE:-qssi}"
-          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-mssi}"
+          export TARGET_OS_SINGLE_SYSTEM_IMAGE="${TARGET_OS_SINGLE_SYSTEM_IMAGE:-essi}"
           python3 - << 'PYEOF'
           from pathlib import Path
 
