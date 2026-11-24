@@ -330,6 +330,7 @@ jobs:
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="${SOURCE_FIRMWARE:-SM-A057F/XXV/357533641234561}"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
+          rm -f unica/patches/deknox/qssi/smali/system_ext/priv-app/StorageManager/StorageManager.apk/0001-Nuke-Knox-DualDAR-and-HDM-version.patch
           python3 - << 'PYEOF'
           from pathlib import Path
 
