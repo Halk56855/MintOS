@@ -111,7 +111,11 @@ DECODE()
     fi
 
     if [[ "$INPUT_FILE" == *"services.jar" ]]; then
-        EVAL "baksmali d \"$INPUT_FILE/classes.dex/2\" -a 29 --ac false --di false --sl -l -o \"$OUTPUT_PATH/smali_classes2\"" || exit 1
+        if unzip -l "$INPUT_FILE" | grep -qE '(^|[[:space:]])classes2\.dex([[:space:]]|$)'; then
+            EVAL "baksmali d \"$INPUT_FILE/classes.dex/2\" -a 29 --ac false --di false --sl -l -o \"$OUTPUT_PATH/smali_classes2\"" || true
+        else
+            LOGW "No classes2.dex found in ${INPUT_FILE//$WORK_DIR/}, skipping smali_classes2"
+        fi
     fi
 
     # https://github.com/iBotPeaches/Apktool/issues/3615
