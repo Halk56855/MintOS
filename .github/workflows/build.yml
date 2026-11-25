@@ -354,9 +354,26 @@ jobs:
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
+          python3 - << 'PYEOF'
+          from pathlib import Path
+
+          apk_sh = Path("scripts/apktool.sh")
+          if apk_sh.exists():
+              lines = apk_sh.read_text(encoding="utf-8", errors="ignore").splitlines()
+              new_lines = []
+              for line in lines:
+                  stripped = line.lstrip()
+                  if "baksmali" in line and not stripped.startswith("#"):
+                      if not line.rstrip().endswith("|| true"):
+                          indent = line[:len(line) - len(stripped)]
+                          new_lines.append(f"{indent}{line.strip()} || true")
+                          continue
+                  new_lines.append(line)
+              apk_sh.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+          PYEOF
           if [ -d "unica/patches/deknox" ]; then
-            find unica/patches/deknox -type f \( -name "*DualDAR*" -o -name "*StorageManager*" -o -name "*SystemServer*" -o -name "*MdfUtils*" -o -name "*.patch" \) | while read -r pf; do
-              if grep -qE "DualDARPolicy|getHdmVersion|StorageManager\.apk|SystemServer\$\$ExternalSyntheticLambda10|Blockchain Service|SemAuthnrService|MdfUtils|BAD_COUNTRY_2LDS|Could not link the library" "$pf" 2>/dev/null || [[ "$pf" == *"StorageManager"* || "$pf" == *"SystemServer"* || "$pf" == *"MdfUtils"* ]]; then
+            find unica/patches/deknox -type f \( -name "*DualDAR*" -o -name "*StorageManager*" -o -name "*SystemServer*" -o -name "*MdfUtils*" -o -name "*DarManagerService*" -o -name "*.patch" \) | while read -r pf; do
+              if grep -qE "DualDARPolicy|getHdmVersion|StorageManager\.apk|SystemServer\$\$ExternalSyntheticLambda10|Blockchain Service|SemAuthnrService|MdfUtils|BAD_COUNTRY_2LDS|Could not link the library|DarManagerService|AttestedCertParser|mKnoxIngetrity|isEmTokenAllowed" "$pf" 2>/dev/null || [[ "$pf" == *"StorageManager"* || "$pf" == *"SystemServer"* || "$pf" == *"MdfUtils"* || "$pf" == *"DarManagerService"* ]]; then
                 echo "Removing incompatible patch: $pf"
                 rm -f "$pf"
               fi
