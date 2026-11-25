@@ -14,7 +14,7 @@ on:
   pull_request:
   push:
     branches:
-      - 'paradigm'
+      - 'sixteen'
 
 jobs:
   build:
@@ -375,45 +375,10 @@ jobs:
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
-          python3 - << 'PYEOF'
-          from pathlib import Path
-
-          apk_sh = Path("scripts/apktool.sh")
-          if apk_sh.exists():
-              lines = apk_sh.read_text(encoding="utf-8", errors="ignore").splitlines()
-              new_lines = []
-              for line in lines:
-                  stripped = line.lstrip()
-                  if "baksmali" in line and not stripped.startswith("#"):
-                      if not line.rstrip().endswith("|| true"):
-                          indent = line[:len(line) - len(stripped)]
-                          new_lines.append(f"{indent}{line.strip()} || true")
-                          continue
-                  new_lines.append(line)
-              apk_sh.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-          PYEOF
-          for patch_dir in ["unica/patches/deknox", "unica/mods/knoxpatch"]; do
-            if [ -d "$patch_dir" ]; then
-              find "$patch_dir" -type f \( -name "*DualDAR*" -o -name "*StorageManager*" -o -name "*SystemServer*" -o -name "*MdfUtils*" -o -name "*DarManagerService*" -o -name "*Disable-SAK*" -o -name "*.patch" \) | while read -r pf; do
-                if grep -qE "DualDARPolicy|getHdmVersion|StorageManager\.apk|SystemServer\$\$ExternalSyntheticLambda10|Blockchain Service|SemAuthnrService|MdfUtils|BAD_COUNTRY_2LDS|Could not link the library|DarManagerService|Disable-SAK-in-DarManagerService|AttestedCertParser|mKnoxIngetrity|isEmTokenAllowed" "$pf" 2>/dev/null || [[ "$pf" == *"StorageManager"* || "$pf" == *"SystemServer"* || "$pf" == *"MdfUtils"* || "$pf" == *"DarManagerService"* || "$pf" == *"Disable-SAK"* ]]; then
-                  echo "Removing incompatible patch: $pf"
-                  rm -f "$pf"
-                fi
-              done
-            fi
-          done
-          if [ -d "unica/mods/applock" ]; then
-            find unica/mods/applock -type f \( -name "*CoreRune*" -o -name "*.patch" \) | while read -r pf; do
-              if grep -qE "CoreRune\.smali|FW_SUPPORT_APPLOCK|FW_APPLOCK|Force AppLock support" "$pf" 2>/dev/null || [[ "$pf" == *"CoreRune"* || "$pf" == *"AppLock"* ]]; then
-                echo "Removing incompatible AppLock patch: $pf"
-                rm -f "$pf"
-              fi
-            done
-          fi
-          if [ -d "unica/mods/hooks" ]; then
-            find unica/mods/hooks -type f \( -name "*SamsungPropsHooks*" -o -name "*Instrumentation*" -o -name "*SystemProperties*" -o -name "*FloatingFeatureHooks*" -o -name "*SemFloatingFeature*" -o -name "*.patch" \) | while read -r pf; do
-              if grep -qE "SamsungPropsHooks|Instrumentation\.smali|SystemProperties\.smali|Introduce SamsungPropsHooks|FloatingFeatureHooks|SemFloatingFeature\.smali|Introduce FloatingFeatureHooks" "$pf" 2>/dev/null || [[ "$pf" == *"SamsungPropsHooks"* || "$pf" == *"FloatingFeatureHooks"* || "$pf" == *"SemFloatingFeature"* ]]; then
-                echo "Removing incompatible hooks patch: $pf"
+          if [ -d "unica" ]; then
+            find unica -type f -name "*.patch" | while read -r pf; do
+              if grep -qE "DarManagerService|Disable-SAK-in-DarManagerService|AttestedCertParser|mKnoxIngetrity|isEmTokenAllowed|DualDARPolicy|getHdmVersion|StorageManager\.apk|SystemServer\$\$ExternalSyntheticLambda10|Blockchain Service|SemAuthnrService|MdfUtils|BAD_COUNTRY_2LDS|Could not link the library|CoreRune\.smali|FW_SUPPORT_APPLOCK|FW_APPLOCK|SamsungPropsHooks|Instrumentation\.smali|SystemProperties\.smali|FloatingFeatureHooks|SemFloatingFeature\.smali" "$pf" 2>/dev/null || [[ "$pf" == *"DarManagerService"* || "$pf" == *"Disable-SAK"* || "$pf" == *"StorageManager"* || "$pf" == *"SystemServer"* || "$pf" == *"MdfUtils"* || "$pf" == *"CoreRune"* || "$pf" == *"SamsungPropsHooks"* || "$pf" == *"FloatingFeatureHooks"* || "$pf" == *"DualDAR"* || "$pf" == *"HDM"* || "$pf" == *"SecSettingsIntelligence"* ]]; then
+                echo "Removing incompatible patch: $pf"
                 rm -f "$pf"
               fi
             done
@@ -424,14 +389,14 @@ jobs:
             chmod +x "$bt_patch"
           fi
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] && \
-              [[ "${{ github.ref }}" == "refs/heads/paradigm" ]]; then
+              [[ "${{ github.ref }}" == "refs/heads/sixteen" ]]; then
               ./scripts/make_rom.sh
           else
               ./scripts/make_rom.sh --no-rom-zip
           fi
 
       - name: Upload to GoFile
-        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/paradigm'
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/sixteen'
         run: |
           ZIP_FILE=$(find out -maxdepth 1 -type f -name "*.zip" | head -n 1)
           RESPONSE=$(curl -s -F "file=@$ZIP_FILE" -F "token=${{ secrets.GOFILE_TOKEN }}" -F "folderId=${{ secrets.GOFILE_FOLDER_ID }}" "https://upload-eu-par.gofile.io/uploadFile")
