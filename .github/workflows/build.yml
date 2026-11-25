@@ -354,24 +354,6 @@ jobs:
           source ./buildenv.sh a04
           export SOURCE_FIRMWARE="SM-A057F/XXV/357533641234561"
           export TARGET_SINGLE_SYSTEM_IMAGE="${TARGET_SINGLE_SYSTEM_IMAGE:-qssi}"
-          python3 - << 'PYEOF'
-          from pathlib import Path
-
-          apk_sh = Path("scripts/apktool.sh")
-          if apk_sh.exists():
-              txt = apk_sh.read_text(encoding="utf-8", errors="ignore")
-              target_snip = "baksmali d "
-              if target_snip in txt and "DexFileNotFoundException" not in txt:
-                  lines = txt.splitlines()
-                  new_lines = []
-                  for line in lines:
-                      if "baksmali d " in line and not line.lstrip().startswith("#"):
-                          indent = line[:len(line) - len(line.lstrip())]
-                          new_lines.append(f"{indent}{line.strip()} || true")
-                      else:
-                          new_lines.append(line)
-                  apk_sh.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-          PYEOF
           if [ -d "unica/patches/deknox" ]; then
             find unica/patches/deknox -type f \( -name "*DualDAR*" -o -name "*StorageManager*" -o -name "*SystemServer*" -o -name "*MdfUtils*" -o -name "*.patch" \) | while read -r pf; do
               if grep -qE "DualDARPolicy|getHdmVersion|StorageManager\.apk|SystemServer\$\$ExternalSyntheticLambda10|Blockchain Service|SemAuthnrService|MdfUtils|BAD_COUNTRY_2LDS|Could not link the library" "$pf" 2>/dev/null || [[ "$pf" == *"StorageManager"* || "$pf" == *"SystemServer"* || "$pf" == *"MdfUtils"* ]]; then
